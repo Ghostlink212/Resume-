@@ -692,9 +692,7 @@ function doCreate(){
   const n=document.getElementById('nameIn').value.trim();
   if(!n){showErr('nameErr','[ HANDLE REQUIRED ]');return}
   showErr('nameErr',''); showErr('codeErr','');
-  const code=genCode();
-  try{localStorage.setItem('gl_last_room',code);}catch(e){}
-  enterRoom(n, code);
+  enterRoom(n, genCode());
 }
 
 function doJoin(){
@@ -704,12 +702,6 @@ function doJoin(){
   if(!n){showErr('nameErr','[ HANDLE REQUIRED ]');return}
   if(!c){showErr('codeErr','[ ACCESS KEY REQUIRED ]');return}
   showErr('nameErr',''); showErr('codeErr','');
-  if(c==='121212'){
-    const last=localStorage.getItem('gl_last_room');
-    if(last){enterRoom(n,last);}
-    else{showErr('codeErr','[ NO ROOM EXISTS — CREATE ONE FIRST ]');}
-    return;
-  }
   enterRoom(n, c);
 }
 
