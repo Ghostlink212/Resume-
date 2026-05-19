@@ -1193,8 +1193,8 @@ function initPeer(rid){
 ══════════════════════════════════════════ */
 (async function initPWA(){
 
-  /* — Register Service Worker — */
-  if('serviceWorker' in navigator){
+  /* — Register Service Worker (only on http/https, not local files) — */
+  if('serviceWorker' in navigator && (location.protocol === 'https:' || location.protocol === 'http:')){
     try{
       const reg = await navigator.serviceWorker.register('./sw.js', {scope:'./'});
 
@@ -1281,7 +1281,7 @@ function initPeer(rid){
       window._requestNotifOnce = true;
       try{ await Notification.requestPermission(); }catch(_){}
     }
-    return enterRoom(n, rid);
+    return origEnterRoom(n, rid);
   };
 
 })();
