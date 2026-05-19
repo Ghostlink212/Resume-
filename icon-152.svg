@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 152 152" width="152" height="152">
+  <rect width="152" height="152" fill="#000500"/>
+  <defs><filter id="g"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <g filter="url(#g)">
+    <path d="M76 34 C53 34 38 51 38 70 L38 108 C38 112 41 114 45 112 L51 109 C57 106 63 108 67 114 L71 120 C73 124 79 124 81 120 L85 114 C89 108 95 106 101 109 L107 112 C111 114 114 112 114 108 L114 70 C114 51 96 34 76 34 Z"
+          fill="none" stroke="#00ff41" stroke-width="2.5" stroke-linejoin="round"/>
+    <ellipse cx="60" cy="69" rx="9" ry="11" fill="#00ff41"/>
+    <ellipse cx="92" cy="69" rx="9" ry="11" fill="#00ff41"/>
+    <ellipse cx="63" cy="65" rx="3" ry="3.5" fill="#ccffcc" opacity="0.7"/>
+    <ellipse cx="95" cy="65" rx="3" ry="3.5" fill="#ccffcc" opacity="0.7"/>
+  </g>
+  <text x="76" y="142" text-anchor="middle" font-family="monospace" font-size="8" fill="#00ff41" letter-spacing="3" opacity="0.45">GHOST LINK</text>
+</svg>

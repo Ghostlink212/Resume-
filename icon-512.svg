@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" fill="#000500"/>
+  <defs>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-strong">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <radialGradient id="glow-bg" cx="50%" cy="45%" r="40%">
+      <stop offset="0%" stop-color="#00ff41" stop-opacity="0.07"/>
+      <stop offset="100%" stop-color="#000500" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Background glow -->
+  <rect width="512" height="512" fill="url(#glow-bg)"/>
+  <!-- Ghost body -->
+  <g filter="url(#glow-strong)">
+    <path d="M256 110 C182 110 138 158 138 222 L138 348 C138 358 148 362 156 356 L172 344 C182 336 196 340 206 350 L218 366 C226 378 242 378 252 366 L264 350 C274 340 288 336 298 344 L314 356 C322 362 332 358 332 348 L332 222 C332 158 318 110 256 110 Z"
+          fill="none" stroke="#00ff41" stroke-width="5.5" stroke-linejoin="round"/>
+    <!-- Ghost face void -->
+    <ellipse cx="256" cy="240" rx="62" ry="52" fill="#000500" opacity="0.9"/>
+    <!-- Eyes -->
+    <ellipse cx="228" cy="236" rx="14" ry="16" fill="#00ff41" opacity="0.95"/>
+    <ellipse cx="284" cy="236" rx="14" ry="16" fill="#00ff41" opacity="0.95"/>
+    <!-- Eye glow -->
+    <ellipse cx="228" cy="236" rx="14" ry="16" fill="none" stroke="#ccffcc" stroke-width="1" opacity="0.5"/>
+    <ellipse cx="284" cy="236" rx="14" ry="16" fill="none" stroke="#ccffcc" stroke-width="1" opacity="0.5"/>
+    <!-- Eye shine -->
+    <ellipse cx="233" cy="230" rx="4" ry="5" fill="#ccffcc" opacity="0.75"/>
+    <ellipse cx="289" cy="230" rx="4" ry="5" fill="#ccffcc" opacity="0.75"/>
+  </g>
+  <!-- Corner brackets -->
+  <g stroke="#00ff41" stroke-width="2.5" fill="none" opacity="0.35">
+    <path d="M20 50 L20 20 L50 20"/>
+    <path d="M462 20 L492 20 L492 50"/>
+    <path d="M20 462 L20 492 L50 492"/>
+    <path d="M462 492 L492 492 L492 462"/>
+  </g>
+  <!-- Outer border -->
+  <rect x="1" y="1" width="510" height="510" fill="none" stroke="#00ff41" stroke-width="0.8" opacity="0.12"/>
+  <!-- Bottom label -->
+  <text x="256" y="436" text-anchor="middle" font-family="monospace" font-size="22" fill="#00ff41" letter-spacing="12" opacity="0.55">GHOST LINK</text>
+</svg>

@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" fill="#000500"/>
+  <rect width="192" height="192" fill="none" stroke="#00ff41" stroke-width="0.5" opacity="0.15"/>
+  <!-- Scanline texture -->
+  <rect width="192" height="192" fill="url(#scan)" opacity="0.04"/>
+  <defs>
+    <pattern id="scan" patternUnits="userSpaceOnUse" width="192" height="4">
+      <rect width="192" height="2" fill="#00ff41"/>
+    </pattern>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-strong">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <!-- Ghost body -->
+  <g filter="url(#glow-strong)" opacity="0.9">
+    <!-- Ghost hood/head -->
+    <path d="M96 42 C68 42 52 60 52 84 L52 130 C52 134 56 136 60 134 L66 130 C70 128 74 130 78 134 L82 140 C85 144 91 144 94 140 L98 134 C101 130 107 128 111 130 L117 134 C121 136 125 134 125 130 L125 84 C125 60 118 42 96 42 Z" 
+          fill="none" stroke="#00ff41" stroke-width="2.5" stroke-linejoin="round"/>
+    <!-- Ghost face — dark void -->
+    <ellipse cx="96" cy="90" rx="24" ry="20" fill="#000500" opacity="0.85"/>
+    <!-- Eyes -->
+    <ellipse cx="86" cy="88" rx="5" ry="6" fill="#00ff41" opacity="0.95"/>
+    <ellipse cx="106" cy="88" rx="5" ry="6" fill="#00ff41" opacity="0.95"/>
+    <!-- Eye shine -->
+    <ellipse cx="88" cy="86" rx="1.5" ry="2" fill="#ccffcc" opacity="0.7"/>
+    <ellipse cx="108" cy="86" rx="1.5" ry="2" fill="#ccffcc" opacity="0.7"/>
+  </g>
+  <!-- Corner brackets -->
+  <g stroke="#00ff41" stroke-width="1.2" fill="none" opacity="0.4">
+    <path d="M8 18 L8 8 L18 8"/>
+    <path d="M174 8 L184 8 L184 18"/>
+    <path d="M8 174 L8 184 L18 184"/>
+    <path d="M174 184 L184 184 L184 174"/>
+  </g>
+  <!-- Bottom text -->
+  <text x="96" y="162" text-anchor="middle" font-family="monospace" font-size="9" fill="#00ff41" letter-spacing="4" opacity="0.6">GHOST LINK</text>
+</svg>

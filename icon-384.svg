@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 384" width="384" height="384">
+  <rect width="384" height="384" fill="#000500"/>
+  <defs>
+    <filter id="g"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <radialGradient id="bg" cx="50%" cy="45%" r="38%">
+      <stop offset="0%" stop-color="#00ff41" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#000500" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="384" height="384" fill="url(#bg)"/>
+  <g filter="url(#g)">
+    <path d="M192 82 C136 82 104 120 104 166 L104 262 C104 270 111 274 118 270 L130 262 C140 254 152 258 160 268 L172 284 C180 294 192 294 200 284 L212 268 C220 258 232 254 242 262 L254 270 C261 274 268 270 268 262 L268 166 C268 120 244 82 192 82 Z"
+          fill="none" stroke="#00ff41" stroke-width="4.5" stroke-linejoin="round"/>
+    <ellipse cx="164" cy="172" rx="20" ry="22" fill="#00ff41" opacity="0.95"/>
+    <ellipse cx="220" cy="172" rx="20" ry="22" fill="#00ff41" opacity="0.95"/>
+    <ellipse cx="170" cy="164" rx="6" ry="7" fill="#ccffcc" opacity="0.7"/>
+    <ellipse cx="226" cy="164" rx="6" ry="7" fill="#ccffcc" opacity="0.7"/>
+  </g>
+  <g stroke="#00ff41" stroke-width="1.8" fill="none" opacity="0.3">
+    <path d="M14 38 L14 14 L38 14"/>
+    <path d="M346 14 L370 14 L370 38"/>
+    <path d="M14 346 L14 370 L38 370"/>
+    <path d="M346 370 L370 370 L370 346"/>
+  </g>
+  <text x="192" y="328" text-anchor="middle" font-family="monospace" font-size="16" fill="#00ff41" letter-spacing="9" opacity="0.5">GHOST LINK</text>
+</svg>

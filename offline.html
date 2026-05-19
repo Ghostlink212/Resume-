@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Ghost Link — Offline</title>
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#000500;--fg:#4dcc6e;--primary:#00ff41;--muted:#3a7d44;--font:'Courier New',monospace;--vt:'VT323',monospace}
+html,body{height:100%;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:14px;display:flex;align-items:center;justify-content:center;text-align:center;padding:2rem}
+@keyframes glow{0%,100%{text-shadow:0 0 4px rgba(0,255,65,.5)}50%{text-shadow:0 0 20px #00ff41,0 0 40px rgba(0,255,65,.4)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.wrap{max-width:340px}
+.icon{width:64px;height:64px;border:1px solid rgba(0,255,65,.4);display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;box-shadow:0 0 24px rgba(0,255,65,.2)}
+.title{font-family:var(--vt);font-size:3.5rem;color:var(--primary);letter-spacing:.15em;animation:glow 2.4s ease-in-out infinite;display:block;margin-bottom:.5rem}
+.msg{font-size:12px;color:var(--muted);line-height:1.85;margin-bottom:1.5rem}
+.blink{animation:pulse 1.2s ease-in-out infinite;color:var(--primary);font-size:12px;letter-spacing:.15em}
+.retry{display:inline-block;margin-top:1.5rem;padding:.6rem 1.4rem;background:var(--primary);color:#000;font-family:var(--font);font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;border:none;cursor:pointer;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="icon">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#00ff41" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+  </div>
+  <span class="title">GHOST LINK</span>
+  <p class="msg">&gt; Signal lost. No network detected.<br>&gt; Your tunnels require an active connection.<br>&gt; Please check your network and try again.</p>
+  <p class="blink">▮ OFFLINE MODE ACTIVE</p>
+  <br/>
+  <a class="retry" href="./" onclick="location.reload()">RECONNECT</a>
+</div>
+</body>
+</html>

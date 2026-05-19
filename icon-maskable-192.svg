@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <!-- Maskable: safe zone is center 66% (40px padding each side). Ghost fills that zone. -->
+  <rect width="192" height="192" fill="#000500"/>
+  <defs>
+    <filter id="glow-m">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <radialGradient id="bg-m" cx="50%" cy="45%" r="38%">
+      <stop offset="0%" stop-color="#00ff41" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#000500" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="192" height="192" fill="url(#bg-m)"/>
+  <!-- Ghost within safe zone (40px–152px) -->
+  <g filter="url(#glow-m)">
+    <path d="M96 50 C74 50 62 66 62 84 L62 126 C62 130 65 132 68 130 L72 127 C76 124 80 126 83 130 L87 136 C90 140 94 140 96 136 L99 130 C102 126 106 124 110 127 L114 130 C117 132 120 130 120 126 L120 84 C120 66 112 50 96 50 Z"
+          fill="none" stroke="#00ff41" stroke-width="2.5" stroke-linejoin="round"/>
+    <!-- Eyes -->
+    <ellipse cx="86" cy="88" rx="6" ry="7" fill="#00ff41"/>
+    <ellipse cx="106" cy="88" rx="6" ry="7" fill="#00ff41"/>
+    <ellipse cx="88" cy="86" rx="2" ry="2.5" fill="#ccffcc" opacity="0.7"/>
+    <ellipse cx="108" cy="86" rx="2" ry="2.5" fill="#ccffcc" opacity="0.7"/>
+  </g>
+</svg>
