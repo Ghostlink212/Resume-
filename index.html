@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Ghost Link — Peer Chat</title>
 
+<!-- Google Site Verification -->
+<meta name="google-site-verification" content="Yq7SpwXfgcIN4SLs-XlS0QM5TIU9HEaKzFi3xD9cKE4" />
+
 <!-- PWA Manifest -->
 <link rel="manifest" href="manifest.json" />
 
@@ -19,9 +22,6 @@
 <link rel="apple-touch-icon" href="icons/icon-192.svg" />
 <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.svg" />
 <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.svg" />
-
-<!-- Splash screens for iPhone (optional but adds polish) -->
-<meta name="apple-mobile-web-app-status-bar-style" content="black" />
 
 <!-- Standard favicon -->
 <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg" />
@@ -112,10 +112,9 @@ html,body{height:100%;height:100dvh;background:var(--bg);color:var(--fg);
 .ghost-lbl{font-size:11px;letter-spacing:.35em;color:var(--muted);
   text-transform:uppercase;display:block;margin-bottom:.4rem}
 .big-title{font-family:var(--vt);font-size:4rem;color:var(--primary);
-  letter-spacing:.15em;position:relative;display:inline-block;animation:glow-pulse 2.4s ease-in-out infinite}
+  letter-spacing:.15em;position:relative;display:inline-block;animation:glitch 5s ease-in-out infinite}
 .big-title::after{content:attr(data-text);position:absolute;left:0;top:0;
   color:var(--primary);animation:glitch2 5s ease-in-out infinite;pointer-events:none}
-.big-title{animation:glitch 5s ease-in-out infinite}
 .subtitle{font-size:11px;letter-spacing:.22em;color:var(--muted);margin-top:.3rem}
 .card{background:var(--card-bg);border:1px solid var(--border);overflow:hidden;
   box-shadow:0 0 60px rgba(0,255,65,.06),0 0 1px rgba(0,255,65,.3),inset 0 1px 0 rgba(0,255,65,.04)}
@@ -692,7 +691,9 @@ function doCreate(){
   const n=document.getElementById('nameIn').value.trim();
   if(!n){showErr('nameErr','[ HANDLE REQUIRED ]');return}
   showErr('nameErr',''); showErr('codeErr','');
-  enterRoom(n, genCode());
+  const code=genCode();
+  try{localStorage.setItem('gl_last_room',code);}catch(e){}
+  enterRoom(n, code);
 }
 
 function doJoin(){
@@ -702,6 +703,12 @@ function doJoin(){
   if(!n){showErr('nameErr','[ HANDLE REQUIRED ]');return}
   if(!c){showErr('codeErr','[ ACCESS KEY REQUIRED ]');return}
   showErr('nameErr',''); showErr('codeErr','');
+  if(c==='121212'){
+    const last=localStorage.getItem('gl_last_room');
+    if(last){enterRoom(n,last);}
+    else{showErr('codeErr','[ NO ROOM EXISTS — CREATE ONE FIRST ]');}
+    return;
+  }
   enterRoom(n, c);
 }
 
