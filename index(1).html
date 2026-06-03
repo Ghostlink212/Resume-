@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Ghost Link — Peer Chat</title>
+
+<!-- Google Site Verification -->
+<meta name="google-site-verification" content="Yq7SpwXfgcIN4SLs-XlS0QM5TIU9HEaKzFi3xD9cKE4" />
+
+<!-- PWA Manifest -->
+<link rel="manifest" href="manifest.json" />
+
+<!-- Theme -->
+<meta name="theme-color" content="#00ff41" />
+<meta name="background-color" content="#000500" />
+
+    <!-- iOS PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Ghost Link" />
+    <link rel="apple-touch-icon" href="11223344.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="11223344.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="11223344.png" />
+
+    <!-- Standard favicon -->
+    <link rel="icon" type="image/png" sizes="192x192" href="11223344.png" />
+
+    <!-- SEO / Open Graph -->
+    <meta name="description" content="Secure peer-to-peer encrypted chat. No servers. No logs. AES-256-GCM." />
+    <meta property="og:title" content="Ghost Link – Peer Chat" />
+    <meta property="og:description" content="Mesh WebRTC · Hole-Punch · AES-256-GCM. No servers. No logs." />
+    <meta property="og:type" content="website" />
+
+    <!-- Windows / Microsoft -->
+    <meta name="msapplication-tileColor" content="#000500" />
+    <meta name="msapplication-tileImage" content="11223344.png" />
+     
+<meta name="msapplication-tap-highlight" content="no" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#000500;--fg:#4dcc6e;--primary:#00ff41;--primary-dim:#006618;
+  --card-bg:#040d04;--sidebar-bg:#020802;--border:#0d2b0d;--border-hi:#1a5a1a;
+  --muted:#3a7d44;--accent:#00d4b8;--red:#ff4444;
+  --font:'Share Tech Mono','Courier New',monospace;--vt:'VT323',monospace;
+}
+html,body{height:100%;height:100dvh;background:var(--bg);color:var(--fg);
+  font-family:var(--font);font-size:14px;-webkit-font-smoothing:antialiased;overflow:hidden;}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--primary-dim);border-radius:2px}
+::selection{background:rgba(0,255,65,.25);color:#ccffcc}
+
+/* ANIMATIONS */
+@keyframes glow-pulse{0%,100%{text-shadow:0 0 4px rgba(0,255,65,.5)}50%{text-shadow:0 0 20px #00ff41,0 0 40px rgba(0,255,65,.4)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes blink-dot{0%,80%,100%{opacity:0}40%{opacity:1}}
+@keyframes glitch{0%,90%,100%{clip-path:none;transform:none}
+  92%{clip-path:polygon(0 20%,100% 20%,100% 25%,0 25%);transform:translateX(-4px)}
+  94%{clip-path:polygon(0 60%,100% 60%,100% 65%,0 65%);transform:translateX(4px)}
+  96%{clip-path:polygon(0 40%,100% 40%,100% 45%,0 45%);transform:translateX(-2px)}}
+@keyframes glitch2{0%,90%,100%{clip-path:none;transform:none;color:var(--primary)}
+  92%{clip-path:polygon(0 30%,100% 30%,100% 35%,0 35%);transform:translateX(4px);color:#ff0055}
+  94%{clip-path:polygon(0 70%,100% 70%,100% 75%,0 75%);transform:translateX(-4px);color:#00d4ff}}
+@keyframes msg-left{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:none}}
+@keyframes msg-right{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
+@keyframes sys-in{from{opacity:0;transform:scaleX(.7)}to{opacity:1;transform:scaleX(1)}}
+@keyframes flash-in{0%{opacity:0}20%{opacity:1}80%{opacity:1}100%{opacity:0}}
+@keyframes scanline-move{from{background-position:0 0}to{background-position:0 4px}}
+@keyframes scale-in{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+
+/* SCANLINE */
+#scanline{position:fixed;inset:0;pointer-events:none;z-index:1;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,65,.012) 2px,rgba(0,255,65,.012) 4px);
+  animation:scanline-move .2s linear infinite}
+#matrix{position:fixed;inset:0;z-index:0;pointer-events:none}
+#flash{position:fixed;inset:0;pointer-events:none;z-index:9997;display:none;
+  background:rgba(0,255,65,.04);animation:flash-in .4s ease-out forwards}
+
+/* SHARED INPUTS */
+.gl-input{width:100%;background:var(--bg);border:1px solid var(--border);
+  color:var(--primary);font-family:var(--font);font-size:14px;
+  padding:.55rem .75rem;outline:none;caret-color:var(--primary);
+  transition:border-color .2s,box-shadow .2s}
+.gl-input::placeholder{color:rgba(0,255,65,.2)}
+.gl-input:focus{border-color:rgba(0,255,65,.5);box-shadow:0 0 0 2px rgba(0,255,65,.1),0 0 12px rgba(0,255,65,.08)}
+.gl-btn{display:block;width:100%;padding:.65rem 1rem;background:var(--primary);color:#000;
+  font-family:var(--font);font-size:13px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;
+  border:none;cursor:pointer;transition:opacity .2s,transform .1s,box-shadow .2s;
+  box-shadow:0 0 16px rgba(0,255,65,.3),0 0 32px rgba(0,255,65,.1)}
+.gl-btn:hover{opacity:.88;box-shadow:0 0 24px rgba(0,255,65,.5),0 0 48px rgba(0,255,65,.2)}
+.gl-btn:active{transform:scale(.98)}
+.gl-label{display:block;font-size:11px;letter-spacing:.2em;color:var(--muted);
+  text-transform:uppercase;margin-bottom:.45rem}
+.gl-err{color:var(--red);font-size:12px;margin-top:.35rem}
+.glow{animation:glow-pulse 2.4s ease-in-out infinite}
+.blink{animation:pulse 1s ease-in-out infinite}
+
+/* HOME SCREEN */
+#homeScreen{position:relative;z-index:2;min-height:100dvh;display:flex;
+  align-items:center;justify-content:center;padding:1rem;animation:scale-in .3s ease-out}
+.home-inner{width:100%;max-width:440px}
+.logo-wrap{text-align:center;margin-bottom:2.5rem}
+.logo-box{display:inline-flex;align-items:center;justify-content:center;
+  width:68px;height:68px;border:1px solid rgba(0,255,65,.4);margin-bottom:.6rem;
+  box-shadow:0 0 24px rgba(0,255,65,.3),inset 0 0 24px rgba(0,255,65,.06);
+  animation:glow-pulse 3s ease-in-out infinite}
+.ghost-lbl{font-size:11px;letter-spacing:.35em;color:var(--muted);
+  text-transform:uppercase;display:block;margin-bottom:.4rem}
+.big-title{font-family:var(--vt);font-size:4rem;color:var(--primary);
+  letter-spacing:.15em;position:relative;display:inline-block;animation:glitch 5s ease-in-out infinite}
+.big-title::after{content:attr(data-text);position:absolute;left:0;top:0;
+  color:var(--primary);animation:glitch2 5s ease-in-out infinite;pointer-events:none}
+.subtitle{font-size:11px;letter-spacing:.22em;color:var(--muted);margin-top:.3rem}
+.card{background:var(--card-bg);border:1px solid var(--border);overflow:hidden;
+  box-shadow:0 0 60px rgba(0,255,65,.06),0 0 1px rgba(0,255,65,.3),inset 0 1px 0 rgba(0,255,65,.04)}
+.card-sec{padding:1.2rem 1.4rem;border-bottom:1px solid var(--border)}
+.card-sec:last-child{border-bottom:none}
+.tabs{display:flex;border-bottom:1px solid var(--border)}
+.tab{flex:1;padding:.65rem;background:none;border:none;border-bottom:2px solid transparent;
+  margin-bottom:-1px;font-family:var(--font);font-size:12px;letter-spacing:.15em;
+  text-transform:uppercase;color:var(--muted);cursor:pointer;transition:all .2s}
+.tab.on{border-bottom-color:var(--primary);color:var(--primary)}
+.tab:hover:not(.on){color:var(--fg)}
+.hint{font-size:12px;color:var(--muted);line-height:1.85;margin-bottom:1rem}
+.code-in{text-align:center;font-size:20px;letter-spacing:.6em;text-transform:uppercase}
+.foot-badges{display:flex;gap:1.4rem;justify-content:center;margin-top:1.5rem;
+  font-size:11px;letter-spacing:.12em;color:var(--muted);flex-wrap:wrap}
+.foot-badge{display:flex;align-items:center;gap:.35rem;padding:.3rem .6rem;
+  border:1px solid rgba(0,255,65,.12);background:rgba(0,255,65,.02)}
+
+/* ROOM */
+#roomScreen{position:relative;z-index:2;height:100dvh;display:flex;
+  flex-direction:column;overflow:hidden;animation:scale-in .25s ease-out}
+
+/* DRAWER OVERLAY */
+#sbOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);
+  z-index:9998;backdrop-filter:blur(2px)}
+#sbOverlay.visible{display:block}
+
+/* DRAWER */
+#sbDrawer{position:fixed;top:0;left:-290px;bottom:0;width:280px;
+  background:var(--sidebar-bg);z-index:9999;
+  transition:left .28s cubic-bezier(.4,0,.2,1);
+  box-shadow:4px 0 32px rgba(0,0,0,.9);display:flex;flex-direction:column}
+#sbDrawer.open{left:0}
+
+/* SIDEBAR CONTENT */
+.sb-head{padding:.9rem 1rem;border-bottom:1px solid var(--border)}
+.sb-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
+.sb-brand{display:flex;align-items:center;gap:.5rem;font-size:12px;letter-spacing:.2em}
+.sb-icon{width:22px;height:22px;border:1px solid rgba(0,255,65,.4);
+  display:flex;align-items:center;justify-content:center;box-shadow:0 0 8px rgba(0,255,65,.25)}
+.close-sb-btn{display:flex;align-items:center;background:none;border:none;
+  color:var(--muted);cursor:pointer;padding:4px;line-height:1}
+.close-sb-btn:hover{color:var(--primary)}
+.code-box{background:rgba(0,255,65,.035);border:1px solid var(--border);
+  padding:.75rem;transition:border-color .2s}
+.code-box:hover{border-color:rgba(0,255,65,.25)}
+.code-lbl{font-size:10px;letter-spacing:.25em;color:var(--muted);text-transform:uppercase;margin-bottom:.35rem}
+.code-row{display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+.code-val{font-family:var(--vt);font-size:1.9rem;color:var(--primary);letter-spacing:.4em}
+.copy-btn{font-size:11px;padding:.2rem .5rem;background:transparent;
+  border:1px solid rgba(0,255,65,.3);color:var(--primary);font-family:var(--font);
+  letter-spacing:.1em;cursor:pointer;transition:all .2s;white-space:nowrap}
+.copy-btn:hover{background:rgba(0,255,65,.12);border-color:rgba(0,255,65,.5)}
+.code-hint{font-size:11px;color:rgba(0,255,65,.28);margin-top:.35rem}
+.sb-sec{padding:.65rem 1rem;border-bottom:1px solid var(--border)}
+.sb-sec-lbl{font-size:10px;letter-spacing:.2em;color:rgba(0,255,65,.35);
+  text-transform:uppercase;margin-bottom:.45rem}
+.st-row{display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dot-g{background:var(--primary);box-shadow:0 0 6px rgba(0,255,65,.9),0 0 12px rgba(0,255,65,.4)}
+.dot-a{background:#f59e0b;animation:pulse 1s infinite}
+.dot-r{background:var(--red);box-shadow:0 0 6px rgba(255,68,68,.6)}
+.dot-c{background:var(--accent);box-shadow:0 0 6px rgba(0,212,184,.7)}
+.st-txt{font-size:11px;color:var(--muted);letter-spacing:.1em}
+.peers-list{flex:1;overflow-y:auto;padding:.65rem 1rem}
+.no-peers{font-size:12px;color:rgba(0,255,65,.3);line-height:1.85}
+.peer-item{display:flex;align-items:center;gap:.65rem;padding:.35rem 0}
+.avatar{border-radius:2px;display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;flex-shrink:0;border:1px solid;position:relative}
+.peer-dot{position:absolute;bottom:-2px;right:-2px;width:8px;height:8px;
+  border-radius:50%;border:1px solid var(--sidebar-bg)}
+.p-name{font-size:13px;color:var(--fg)}
+.p-status{font-size:11px;color:rgba(0,255,65,.4);letter-spacing:.1em}
+.sb-foot{padding:.65rem 1rem;border-top:1px solid var(--border)}
+.leave-btn{display:flex;align-items:center;gap:.5rem;background:none;
+  border:1px solid transparent;color:var(--muted);font-family:var(--font);
+  font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+  padding:.5rem .7rem;cursor:pointer;width:100%;transition:all .2s}
+.leave-btn:hover{color:var(--red);border-color:rgba(255,68,68,.2);background:rgba(255,68,68,.05)}
+
+/* CHAT AREA */
+.chat-main{flex:1;display:flex;flex-direction:column;overflow:hidden;
+  background:rgba(0,5,0,.55);backdrop-filter:blur(6px)}
+.chat-head{height:50px;border-bottom:1px solid var(--border);padding:0 1rem;
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(4,13,4,.9);flex-shrink:0}
+.ch-left,.ch-right{display:flex;align-items:center;gap:.75rem}
+
+/* DOTS BUTTON */
+.dots-btn{background:none;border:1px solid rgba(0,255,65,.22);cursor:pointer;
+  color:var(--primary);font-size:1.4rem;line-height:1;
+  width:36px;height:36px;display:flex;align-items:center;justify-content:center;
+  border-radius:3px;transition:all .2s;flex-shrink:0;
+  text-shadow:0 0 8px rgba(0,255,65,.7)}
+.dots-btn:hover{background:rgba(0,255,65,.1);border-color:rgba(0,255,65,.5);
+  box-shadow:0 0 10px rgba(0,255,65,.2)}
+.dots-btn:active{transform:scale(.94)}
+
+.room-id-h{font-family:var(--vt);font-size:1.6rem;color:var(--primary);
+  letter-spacing:.2em;text-shadow:0 0 8px rgba(0,255,65,.5)}
+.online-badge{font-size:11px;color:var(--muted);background:rgba(0,255,65,.06);
+  border:1px solid var(--border);padding:.12rem .5rem;letter-spacing:.1em}
+.secure-lbl{font-size:11px;color:var(--muted);letter-spacing:.1em;
+  display:flex;align-items:center;gap:.3rem}
+.sound-btn{background:none;border:1px solid rgba(0,255,65,.18);color:var(--muted);
+  font-family:var(--font);font-size:11px;letter-spacing:.1em;
+  padding:.2rem .45rem;cursor:pointer;transition:all .2s}
+.sound-btn:hover{color:var(--primary);border-color:rgba(0,255,65,.4)}
+.sound-btn.on{color:var(--primary);border-color:rgba(0,255,65,.35)}
+.err-banner{background:rgba(255,68,68,.08);border-bottom:1px solid rgba(255,68,68,.25);
+  padding:.45rem 1rem;font-size:12px;color:var(--red);
+  display:flex;align-items:center;gap:.5rem}
+
+/* MESSAGES */
+.messages{flex:1;overflow-y:auto;padding:1rem;display:flex;flex-direction:column}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;text-align:center;padding-bottom:4rem}
+.empty-icon{width:60px;height:60px;border:1px solid rgba(0,255,65,.3);
+  display:flex;align-items:center;justify-content:center;margin-bottom:1rem;
+  box-shadow:0 0 24px rgba(0,255,65,.1),inset 0 0 24px rgba(0,255,65,.05);
+  animation:glow-pulse 3s ease-in-out infinite}
+.empty-title{font-size:14px;color:var(--primary);letter-spacing:.2em;
+  text-transform:uppercase;margin-bottom:.35rem}
+.empty-hint{font-size:12px;color:var(--muted);line-height:1.7}
+.sys-msg{display:flex;justify-content:center;padding:.5rem 0;animation:sys-in .3s ease-out}
+.sys-txt{font-size:11px;color:rgba(0,255,65,.35);letter-spacing:.1em;
+  border-top:1px solid rgba(0,255,65,.1);border-bottom:1px solid rgba(0,255,65,.1);
+  padding:.15rem .8rem}
+.msg-row{display:flex;gap:.7rem;margin-top:.75rem}
+.msg-row.self{flex-direction:row-reverse;animation:msg-right .25s ease-out}
+.msg-row.other{animation:msg-left .25s ease-out}
+.msg-row.grouped{margin-top:2px}
+.av-slot{width:36px;flex-shrink:0}
+.avatar-sm{width:28px;height:28px;border-radius:2px;display:flex;align-items:center;
+  justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;border:1px solid}
+.msg-col{display:flex;flex-direction:column;max-width:72%;align-items:flex-start}
+.msg-col.self{align-items:flex-end}
+.msg-sender{font-size:11px;color:rgba(0,255,65,.5);margin-bottom:2px;padding-left:3px}
+.brow{display:flex;align-items:flex-end;gap:.45rem}
+.brow.self{flex-direction:row-reverse}
+.bubble{padding:.5rem .75rem;border:1px solid;font-size:13px;line-height:1.6;
+  word-break:break-word;position:relative;transition:border-color .2s}
+.bubble.self{background:rgba(0,100,24,.5);border-color:rgba(0,255,65,.25);color:var(--fg);
+  box-shadow:0 0 8px rgba(0,255,65,.06)}
+.bubble.self:hover{border-color:rgba(0,255,65,.4)}
+.bubble.other{background:rgba(4,13,4,.88);border-color:var(--border);color:var(--fg)}
+.bubble.other:hover{border-color:rgba(0,255,65,.2)}
+.msg-time{font-size:11px;color:rgba(0,255,65,.25);flex-shrink:0;
+  padding-bottom:2px;white-space:nowrap}
+.msg-ticks{font-size:11px;color:rgba(0,255,65,.3);margin-left:3px;
+  letter-spacing:-2px;flex-shrink:0;align-self:flex-end;padding-bottom:3px;
+  transition:color .3s,text-shadow .3s}
+.msg-ticks.read{color:var(--primary);text-shadow:0 0 6px rgba(0,255,65,.5)}
+
+/* TYPING */
+.typing-bar{display:flex;align-items:center;gap:.5rem;font-size:12px;
+  color:var(--muted);padding:.2rem .2rem .1rem}
+.typing-dots{display:flex;gap:3px}
+.tdot{width:4px;height:4px;border-radius:50%;background:var(--primary)}
+.tdot:nth-child(1){animation:blink-dot 1.2s 0s infinite}
+.tdot:nth-child(2){animation:blink-dot 1.2s .2s infinite}
+.tdot:nth-child(3){animation:blink-dot 1.2s .4s infinite}
+
+/* INPUT AREA — pinned at bottom */
+.input-area{border-top:1px solid var(--border);padding:.75rem 1rem;
+  background:rgba(4,13,4,.95);flex-shrink:0;backdrop-filter:blur(4px)}
+.input-row{display:flex;gap:.5rem;align-items:center}
+.input-wrap{flex:1;display:flex;align-items:center;gap:.45rem;background:var(--bg);
+  border:1px solid var(--border);padding:.5rem .75rem;transition:border-color .2s,box-shadow .2s}
+.input-wrap:focus-within{border-color:rgba(0,255,65,.4);
+  box-shadow:0 0 0 2px rgba(0,255,65,.08),0 0 16px rgba(0,255,65,.06)}
+.input-prompt{color:rgba(0,255,65,.35);font-family:var(--font);font-size:14px;flex-shrink:0}
+.msg-in{flex:1;background:transparent;border:none;outline:none;
+  color:var(--fg);font-family:var(--font);font-size:13px;caret-color:var(--primary)}
+.msg-in::placeholder{color:rgba(0,255,65,.2)}
+.send-btn{width:42px;height:42px;background:transparent;
+  border:1px solid rgba(0,255,65,.3);color:var(--primary);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  transition:all .2s;box-shadow:0 0 8px rgba(0,255,65,.08)}
+.send-btn:hover:not(:disabled){background:rgba(0,255,65,.1);
+  box-shadow:0 0 16px rgba(0,255,65,.25);border-color:rgba(0,255,65,.5)}
+.send-btn:active:not(:disabled){transform:scale(.95)}
+.send-btn:disabled{opacity:.3;cursor:not-allowed}
+.input-footer{display:flex;justify-content:space-between;align-items:center;margin-top:.35rem}
+.input-foot{font-size:11px;color:rgba(0,255,65,.22);letter-spacing:.1em}
+.char-count{font-size:11px;color:rgba(0,255,65,.25)}
+.char-count.warn{color:#f59e0b}
+.char-count.danger{color:var(--red)}
+
+@media(max-width:480px){
+  .secure-lbl{display:none}
+  .msg-col{max-width:84%}
+  .room-id-h{font-size:1.3rem}
+}
+</style>
+</head>
+<body>
+
+<!-- MATRIX RAIN -->
+<canvas id="matrix"></canvas>
+<div id="scanline"></div>
+<div id="flash"></div>
+
+<!-- ══════════════════ HOME SCREEN ══════════════════ -->
+<div id="homeScreen">
+  <div class="home-inner">
+    <div class="logo-wrap">
+      <div class="logo-box">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#00ff41" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+      </div>
+      <span class="ghost-lbl">Ghost Link</span>
+      <div class="big-title glow" data-text="PEER CHAT">PEER CHAT</div>
+      <div class="subtitle">&gt; Mesh WebRTC · Hole-Punch · AES-256-GCM</div>
+    </div>
+
+    <div class="card">
+      <div class="card-sec">
+        <label class="gl-label">&gt; Your handle</label>
+        <input id="nameIn" class="gl-input" type="text" placeholder="enter_handle_" maxlength="30" autocomplete="off" />
+        <div id="nameErr" class="gl-err" style="display:none"></div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab on" id="tabCreate" onclick="switchTab('create')">[ CREATE ]</button>
+        <button class="tab" id="tabJoin" onclick="switchTab('join')">[ JOIN ]</button>
+      </div>
+
+      <div id="panelCreate" class="card-sec">
+        <p class="hint">&gt; A unique 6-char key will be generated.<br>&gt; Share it to let others into your tunnel.</p>
+        <button class="gl-btn" onclick="doCreate()">OPEN TUNNEL</button>
+      </div>
+
+      <div id="panelJoin" class="card-sec" style="display:none">
+        <label class="gl-label">&gt; Access key</label>
+        <input id="codeIn" class="gl-input code-in" type="text" placeholder="______" maxlength="6"
+          autocomplete="off" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')doJoin()" />
+        <div id="codeErr" class="gl-err" style="display:none"></div>
+        <button class="gl-btn" style="margin-top:.9rem" onclick="doJoin()">ENTER TUNNEL</button>
+      </div>
+    </div>
+
+    <div class="foot-badges">
+      <span class="foot-badge">⬡ AES-256-GCM</span>
+      <span class="foot-badge">◈ MESH P2P</span>
+      <span class="foot-badge">⬢ HOLE-PUNCH</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ ROOM SCREEN ══════════════════ -->
+<div id="roomScreen" style="display:none">
+
+  <!-- Drawer overlay -->
+  <div id="sbOverlay" onclick="closeSb()"></div>
+
+  <!-- Sidebar drawer (slides from left) -->
+  <div id="sbDrawer">
+    <div class="sb-head">
+      <div class="sb-top">
+        <div class="sb-brand">
+          <div class="sb-icon">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00ff41" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          GHOST LINK
+        </div>
+        <button class="close-sb-btn" onclick="closeSb()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="code-box">
+        <div class="code-lbl">&gt; Access Key</div>
+        <div class="code-row">
+          <span class="code-val glow" id="sbRoomId"></span>
+          <button class="copy-btn" id="copyBtn" onclick="copyCode()">COPY</button>
+        </div>
+        <div class="code-hint">&gt; share to invite</div>
+      </div>
+    </div>
+
+    <div class="sb-sec">
+      <div class="st-row">
+        <div class="dot dot-a" id="tunnelDot"></div>
+        <span class="st-txt" id="tunnelTxt">ESTABLISHING...</span>
+      </div>
+      <div class="st-row">
+        <div class="dot dot-c"></div>
+        <span class="st-txt">AES-256-GCM ACTIVE</span>
+      </div>
+    </div>
+
+    <div class="sb-sec">
+      <div class="sb-sec-lbl">&gt; You</div>
+      <div class="peer-item">
+        <div class="avatar" id="myAvatar" style="width:28px;height:28px"></div>
+        <div>
+          <div class="p-name" id="myName"></div>
+          <div class="p-status">ONLINE</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="peers-list" id="peersList">
+      <div class="sb-sec-lbl">&gt; Peers [<span id="peersCount">0</span>]</div>
+      <div id="peersInner">
+        <p class="no-peers">&gt; no peers detected<br>&gt; share access key_</p>
+      </div>
+    </div>
+
+    <div class="sb-foot">
+      <button class="leave-btn" onclick="leaveRoom()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        EXIT TUNNEL
+      </button>
+    </div>
+  </div>
+
+  <!-- Chat area -->
+  <div class="chat-main">
+    <div class="chat-head">
+      <div class="ch-left">
+        <button class="dots-btn" onclick="toggleSb()" title="Open menu" aria-label="Open menu">⋮</button>
+        <span class="room-id-h" id="headRoomId"></span>
+        <span class="online-badge" id="onlineBadge">1 online</span>
+      </div>
+      <div class="ch-right">
+        <button class="sound-btn on" id="soundBtn" onclick="toggleSound()">♪ SFX</button>
+        <span class="secure-lbl">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#00ff41" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 3px rgba(0,255,65,.8))">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          Mesh · AES-256
+        </span>
+      </div>
+    </div>
+
+    <div id="errBanner" class="err-banner" style="display:none">
+      <span class="blink">▮</span> <span id="errTxt"></span>
+    </div>
+
+    <div class="messages" id="messages">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ff41" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 4px rgba(0,255,65,.7))">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <div class="empty-title glow">TUNNEL READY</div>
+        <div class="empty-hint">&gt; share key <span id="emptyRoomId" style="font-family:var(--vt);font-size:1.2rem;color:var(--primary)"></span> to let peers in_</div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div id="typingBar" class="typing-bar" style="display:none">
+        <span id="typingTxt"></span>
+        <span class="typing-dots"><span class="tdot"></span><span class="tdot"></span><span class="tdot"></span></span>
+      </div>
+      <div class="input-row">
+        <div class="input-wrap">
+          <span class="input-prompt">&gt;</span>
+          <input id="msgIn" class="msg-in" type="text" placeholder="transmit message_"
+            maxlength="500" autocomplete="off" disabled
+            oninput="onMsgInput(this.value)"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();doSend()}" />
+        </div>
+        <button class="send-btn" id="sendBtn" disabled onclick="doSend()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+      <div class="input-footer">
+        <span class="input-foot" id="inputFoot">Mesh WebRTC · AES-256-GCM · 0 peers</span>
+        <span class="char-count" id="charCount" style="display:none"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════
+   MATRIX RAIN
+══════════════════════════════════════════ */
+(function(){
+  const canvas = document.getElementById('matrix');
+  const ctx = canvas.getContext('2d');
+  const KATAKANA = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+  const SYMBOLS = '0123456789ABCDEF@#$%&*<>[]{}|~^';
+  const CHARS = (KATAKANA + SYMBOLS).split('');
+  let drops = [], cols = 0;
+
+  function resize(){
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    cols = Math.floor(canvas.width / 18);
+    drops = Array.from({length:cols},()=>({
+      y: Math.random() * -canvas.height / 18,
+      speed: .3 + Math.random() * .7,
+      bright: Math.random() > .85
+    }));
+  }
+
+  function draw(){
+    ctx.fillStyle = 'rgba(0,5,0,.055)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    for(let i=0; i<drops.length; i++){
+      const d = drops[i];
+      const ch = CHARS[Math.floor(Math.random()*CHARS.length)];
+      const x = i * 18;
+      const y = d.y * 18;
+      ctx.font = `15px 'Share Tech Mono', monospace`;
+      if(d.bright){
+        ctx.fillStyle = '#ccffcc';
+        ctx.shadowColor = '#00ff41';
+        ctx.shadowBlur = 8;
+      } else {
+        ctx.fillStyle = `rgba(0,${Math.floor(180+Math.random()*75)},40,.9)`;
+        ctx.shadowBlur = 0;
+      }
+      ctx.fillText(ch, x, y);
+      ctx.shadowBlur = 0;
+      d.y += d.speed;
+      if(d.y * 18 > canvas.height + 50) d.y = Math.random() * -20;
+    }
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+  setInterval(draw, 40);
+})();
+
+/* ══════════════════════════════════════════
+   WEB AUDIO SOUNDS
+══════════════════════════════════════════ */
+let soundOn = true;
+let _actx = null;
+function actx(){
+  if(!_actx) _actx = new (window.AudioContext||window.webkitAudioContext)();
+  if(_actx.state==='suspended') _actx.resume();
+  return _actx;
+}
+function beep(freq,dur,type='sine',vol=.08,attack=.01,release=.1){
+  if(!soundOn) return;
+  try{
+    const c=actx(), g=c.createGain(), o=c.createOscillator();
+    o.type=type; o.frequency.value=freq;
+    g.gain.setValueAtTime(0,c.currentTime);
+    g.gain.linearRampToValueAtTime(vol,c.currentTime+attack);
+    g.gain.exponentialRampToValueAtTime(.001,c.currentTime+dur);
+    o.connect(g); g.connect(c.destination);
+    o.start(); o.stop(c.currentTime+dur+.05);
+  }catch(e){}
+}
+function sndClick(){beep(880,.06,'square',.05)}
+function sndSend(){beep(660,.08,'sine',.07);setTimeout(()=>beep(880,.06,'sine',.05),60)}
+function sndReceive(){beep(550,.12,'sine',.08);setTimeout(()=>beep(660,.1,'sine',.06),80)}
+function sndConnect(){beep(440,.1,'sine',.06);setTimeout(()=>beep(550,.1,'sine',.06),100);setTimeout(()=>beep(660,.15,'sine',.07),200)}
+function sndError(){beep(220,.2,'sawtooth',.06);setTimeout(()=>beep(180,.25,'sawtooth',.05),150)}
+
+/* ══════════════════════════════════════════
+   CRYPTO — AES-256-GCM
+══════════════════════════════════════════ */
+async function deriveKey(roomId){
+  const enc = new TextEncoder();
+  const base = await crypto.subtle.importKey('raw',enc.encode('GHOST_LINK_V2_'+roomId),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey(
+    {name:'PBKDF2',salt:enc.encode('ghost-salt-v1'),iterations:100000,hash:'SHA-256'},
+    base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']
+  );
+}
+async function encryptMsg(obj, key){
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const enc = new TextEncoder();
+  const ct = await crypto.subtle.encrypt({name:'AES-GCM',iv},key,enc.encode(JSON.stringify(obj)));
+  const out = new Uint8Array(1+12+ct.byteLength);
+  out[0]=0x01; out.set(iv,1); out.set(new Uint8Array(ct),13);
+  return out.buffer;
+}
+function encodeRaw(obj){
+  const enc = new TextEncoder();
+  const bytes = enc.encode(JSON.stringify(obj));
+  const out = new Uint8Array(1+bytes.length);
+  out[0]=0x00; out.set(bytes,1);
+  return out.buffer;
+}
+async function decodePacket(raw, key){
+  let bytes;
+  if(raw instanceof Blob) bytes = new Uint8Array(await raw.arrayBuffer());
+  else bytes = new Uint8Array(raw);
+  if(bytes[0]===0x00){
+    try{ return JSON.parse(new TextDecoder().decode(bytes.slice(1))); }catch{ return null; }
+  }
+  if(bytes[0]===0x01 && key){
+    try{
+      const iv=bytes.slice(1,13), ct=bytes.slice(13);
+      const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,ct);
+      return JSON.parse(new TextDecoder().decode(pt));
+    }catch{ return null; }
+  }
+  return null;
+}
+
+/* ══════════════════════════════════════════
+   AVATAR COLORS
+══════════════════════════════════════════ */
+const HUE=[135,175,50,300,0,200,80];
+function avStyle(name){
+  const h=HUE[name.charCodeAt(0)%HUE.length];
+  return{bg:`hsl(${h} 80% 6%)`,fg:`hsl(${h} 100% 55%)`,bd:`hsl(${h} 80% 20%)`};
+}
+
+/* ══════════════════════════════════════════
+   STATE
+══════════════════════════════════════════ */
+let myName='', myRoomId='', myPeerId='', isHost=false;
+let roomKey=null, peer=null;
+let conns=new Map(), connecting=new Set(), peerNames=new Map(), peerConns=new Map(), peerTypes=new Map();
+let typingPeers=new Map();
+let typingOutTimer=null;
+let msgCount=0;
+const MAX_MSG=500;
+const ICE=[
+  {urls:'stun:stun.l.google.com:19302'},
+  {urls:'stun:stun1.l.google.com:19302'},
+  {urls:'stun:stun2.l.google.com:19302'},
+  {urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},
+  {urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},
+];
+
+/* ══════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════ */
+function genCode(){
+  const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:6},()=>c[Math.floor(Math.random()*c.length)]).join('');
+}
+function genShortId(){return Math.random().toString(36).slice(2,8)}
+function fmtTime(ts){return new Date(ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
+
+/* ══════════════════════════════════════════
+   HOME SCREEN LOGIC
+══════════════════════════════════════════ */
+let activeTab='create';
+
+function switchTab(t){
+  sndClick();
+  activeTab=t;
+  document.getElementById('tabCreate').classList.toggle('on',t==='create');
+  document.getElementById('tabJoin').classList.toggle('on',t==='join');
+  document.getElementById('panelCreate').style.display=t==='create'?'':'none';
+  document.getElementById('panelJoin').style.display=t==='join'?'':'none';
+}
+
+document.getElementById('nameIn').addEventListener('keydown',e=>{
+  if(e.key==='Enter') activeTab==='create'?doCreate():doJoin();
+});
+
+function showErr(id,msg){
+  const el=document.getElementById(id);
+  el.textContent=msg; el.style.display=msg?'':'none';
+}
+
+function doCreate(){
+  sndClick();
+  const n=document.getElementById('nameIn').value.trim();
+  if(!n){showErr('nameErr','[ HANDLE REQUIRED ]');return}
+  showErr('nameErr',''); showErr('codeErr','');
+  const code=genCode();
+  try{localStorage.setItem('gl_last_room',code);}catch(e){}
+  enterRoom(n, code);
+}
+
+function doJoin(){
+  sndClick();
+  const n=document.getElementById('nameIn').value.trim();
+  const c=document.getElementById('codeIn').value.trim().toUpperCase();
+  if(!n){showErr('nameErr','[ HANDLE REQUIRED ]');return}
+  if(!c){showErr('codeErr','[ ACCESS KEY REQUIRED ]');return}
+  showErr('nameErr',''); showErr('codeErr','');
+  if(c==='121212'){
+    const last=localStorage.getItem('gl_last_room');
+    if(last){enterRoom(n,last);}
+    else{showErr('codeErr','[ NO ROOM EXISTS — CREATE ONE FIRST ]');}
+    return;
+  }
+  enterRoom(n, c);
+}
+
+/* ══════════════════════════════════════════
+   ROOM ENTRY / LEAVE
+══════════════════════════════════════════ */
+async function enterRoom(n, rid){
+  myName=n; myRoomId=rid;
+  conns.clear(); connecting.clear(); peerNames.clear(); peerConns.clear(); peerTypes.clear(); typingPeers.clear();
+  if(typingOutTimer){clearTimeout(typingOutTimer);typingOutTimer=null;}
+
+  document.getElementById('homeScreen').style.display='none';
+  document.getElementById('roomScreen').style.display='flex';
+
+  document.getElementById('sbRoomId').textContent=rid;
+  document.getElementById('headRoomId').textContent=rid;
+  document.getElementById('emptyRoomId').textContent=rid;
+  document.getElementById('myName').textContent=n;
+  setAvatar(document.getElementById('myAvatar'), n);
+  updateOnlineBadge();
+  setTunnelStatus('connecting');
+
+  const msgs=document.getElementById('messages');
+  msgs.innerHTML='';
+  msgs.appendChild(mkEmptyState());
+
+  try{
+    roomKey = await deriveKey(rid);
+    initPeer(rid);
+  }catch(e){
+    setErr('KEY ERR: '+e.message);
+  }
+}
+
+function mkEmptyState(){
+  const div=document.createElement('div');
+  div.id='emptyState'; div.className='empty-state';
+  div.innerHTML=`
+    <div class="empty-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ff41" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 4px rgba(0,255,65,.7))">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+    </div>
+    <div class="empty-title glow">TUNNEL READY</div>
+    <div class="empty-hint">&gt; share key <span style="font-family:var(--vt);font-size:1.2rem;color:var(--primary)">${myRoomId}</span> to let peers in_</div>`;
+  return div;
+}
+
+function leaveRoom(){
+  sndClick();
+  if(typingOutTimer){clearTimeout(typingOutTimer);typingOutTimer=null;}
+  broadcastRaw({type:'leave',name:myName});
+  if(peer&&!peer.destroyed) peer.destroy();
+  peer=null; roomKey=null;
+  conns.clear(); connecting.clear(); peerNames.clear(); peerConns.clear(); peerTypes.clear();
+  document.getElementById('roomScreen').style.display='none';
+  document.getElementById('homeScreen').style.display='flex';
+  closeSb();
+}
+
+/* ══════════════════════════════════════════
+   SIDEBAR / DRAWER
+══════════════════════════════════════════ */
+let sbOpen=false;
+function toggleSb(){sndClick(); sbOpen?closeSb():openSb();}
+function openSb(){
+  sbOpen=true;
+  document.getElementById('sbDrawer').classList.add('open');
+  document.getElementById('sbOverlay').classList.add('visible');
+}
+function closeSb(){
+  sbOpen=false;
+  document.getElementById('sbDrawer').classList.remove('open');
+  document.getElementById('sbOverlay').classList.remove('visible');
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSb();});
+
+/* ══════════════════════════════════════════
+   SOUND TOGGLE
+══════════════════════════════════════════ */
+function toggleSound(){
+  soundOn=!soundOn;
+  const btn=document.getElementById('soundBtn');
+  btn.textContent=soundOn?'♪ SFX':'♪ OFF';
+  btn.classList.toggle('on',soundOn);
+}
+
+/* ══════════════════════════════════════════
+   COPY CODE
+══════════════════════════════════════════ */
+function copyCode(){
+  sndClick();
+  navigator.clipboard.writeText(myRoomId).then(()=>{
+    const btn=document.getElementById('copyBtn');
+    btn.textContent='COPIED';
+    setTimeout(()=>btn.textContent='COPY',2000);
+  });
+}
+
+/* ══════════════════════════════════════════
+   STATUS / UI UPDATES
+══════════════════════════════════════════ */
+function setTunnelStatus(s){
+  const dot=document.getElementById('tunnelDot');
+  const txt=document.getElementById('tunnelTxt');
+  dot.className='dot '+(s==='connected'?'dot-g':s==='error'?'dot-r':'dot-a');
+  txt.textContent=s==='connected'?'TUNNEL ACTIVE':s==='error'?'SIGNAL LOST':'ESTABLISHING...';
+  const inp=document.getElementById('msgIn');
+  const btn=document.getElementById('sendBtn');
+  if(s==='connected'){inp.disabled=false;btn.disabled=!inp.value.trim();}
+  else{inp.disabled=true;btn.disabled=true;}
+}
+
+function setErr(msg){
+  const b=document.getElementById('errBanner');
+  b.style.display=msg?'flex':'none';
+  document.getElementById('errTxt').textContent=msg||'';
+}
+
+function updateOnlineBadge(){
+  const connected=Array.from(peerConns.values()).filter(Boolean).length;
+  document.getElementById('onlineBadge').textContent=(connected+1)+' online';
+  document.getElementById('inputFoot').textContent=`Mesh WebRTC · AES-256-GCM · ${connected} peer${connected!==1?'s':''}`;
+}
+
+function setAvatar(el, name){
+  const s=avStyle(name);
+  el.style.width='28px'; el.style.height='28px';
+  el.style.background=s.bg; el.style.color=s.fg; el.style.borderColor=s.bd;
+  el.textContent=name[0]?.toUpperCase()||'?';
+}
+
+function renderPeers(){
+  const inner=document.getElementById('peersInner');
+  const count=peerNames.size;
+  document.getElementById('peersCount').textContent=count;
+  if(count===0){
+    inner.innerHTML='<p class="no-peers">&gt; no peers detected<br>&gt; share access key_</p>';
+    return;
+  }
+  inner.innerHTML='';
+  for(const [pid,name] of peerNames){
+    const connected=peerConns.get(pid)||false;
+    const type=peerTypes.get(pid)||'LINKING';
+    const s=avStyle(name);
+    const dotColor=connected?(type==='DIRECT'?'var(--primary)':'var(--accent)'):'#444';
+    const item=document.createElement('div');
+    item.className='peer-item';
+    item.innerHTML=`
+      <div class="avatar" style="width:28px;height:28px;background:${s.bg};color:${s.fg};border-color:${s.bd}">
+        ${name[0]?.toUpperCase()||'?'}
+        <div class="peer-dot" style="background:${dotColor}"></div>
+      </div>
+      <div>
+        <div class="p-name">${name}</div>
+        <div class="p-status">${connected?type:'LINKING...'}</div>
+      </div>`;
+    inner.appendChild(item);
+  }
+}
+
+/* ══════════════════════════════════════════
+   MESSAGES
+══════════════════════════════════════════ */
+const tickEls=new Map();
+
+function removeEmpty(){
+  const es=document.getElementById('emptyState');
+  if(es) es.remove();
+}
+
+function pushMsg(msg){
+  removeEmpty();
+  const box=document.getElementById('messages');
+  const el=document.createElement('div');
+
+  if(msg.system){
+    el.className='sys-msg';
+    el.innerHTML=`<span class="sys-txt">── ${msg.text} ──</span>`;
+  } else {
+    const self=msg.self;
+    const showAv=!self&&msg.showAv;
+    el.className=`msg-row ${self?'self':'other'}${msg.grouped?' grouped':''}`;
+    if(!self){
+      const avSlot=document.createElement('div');
+      avSlot.className='av-slot';
+      if(showAv){
+        const s=avStyle(msg.fromName);
+        avSlot.innerHTML=`<div class="avatar-sm" style="background:${s.bg};color:${s.fg};border-color:${s.bd}">${msg.fromName[0]?.toUpperCase()||'?'}</div>`;
+      }
+      el.appendChild(avSlot);
+    }
+    const col=document.createElement('div');
+    col.className='msg-col'+(self?' self':'');
+    if(showAv&&!self) col.innerHTML=`<div class="msg-sender">${msg.fromName}</div>`;
+    const brow=document.createElement('div');
+    brow.className='brow'+(self?' self':'');
+    const bubble=document.createElement('div');
+    bubble.className='bubble '+(self?'self':'other');
+    bubble.textContent=msg.text;
+    brow.appendChild(bubble);
+    if(self){
+      const ticks=document.createElement('span');
+      ticks.className='msg-ticks';
+      ticks.textContent='✓';
+      if(msg.id) tickEls.set(msg.id,ticks);
+      brow.appendChild(ticks);
+    }
+    const time=document.createElement('span');
+    time.className='msg-time';
+    time.textContent=fmtTime(msg.ts);
+    brow.appendChild(time);
+    col.appendChild(brow);
+    el.appendChild(col);
+  }
+
+  box.appendChild(el);
+  el.scrollIntoView({behavior:'smooth',block:'end'});
+}
+
+function sysMsg(text){pushMsg({system:true,text,ts:Date.now()});}
+
+function showFlash(){
+  const f=document.getElementById('flash');
+  f.style.display='block';
+  f.style.animation='none';
+  void f.offsetWidth;
+  f.style.animation='flash-in .4s ease-out forwards';
+  setTimeout(()=>f.style.display='none',400);
+}
+
+/* ══════════════════════════════════════════
+   TYPING
+══════════════════════════════════════════ */
+function setTyping(pid, pname, on){
+  const existing=typingPeers.get(pid);
+  if(existing) clearTimeout(existing.timer);
+  if(on){
+    const timer=setTimeout(()=>{typingPeers.delete(pid);renderTyping();},3200);
+    typingPeers.set(pid,{name:pname,timer});
+  } else {
+    typingPeers.delete(pid);
+  }
+  renderTyping();
+}
+
+function clearTyping(pid){
+  const e=typingPeers.get(pid);
+  if(e) clearTimeout(e.timer);
+  typingPeers.delete(pid);
+  renderTyping();
+}
+
+function renderTyping(){
+  const bar=document.getElementById('typingBar');
+  const txt=document.getElementById('typingTxt');
+  const names=Array.from(typingPeers.values()).map(v=>v.name);
+  if(names.length===0){bar.style.display='none';return;}
+  bar.style.display='flex';
+  txt.textContent=names.length===1?`${names[0]} is typing`:
+    names.length===2?`${names[0]} and ${names[1]} are typing`:`${names.length} people are typing`;
+}
+
+/* ══════════════════════════════════════════
+   INPUT
+══════════════════════════════════════════ */
+document.getElementById('msgIn').addEventListener('input',function(){
+  onMsgInput(this.value);
+});
+
+function onMsgInput(val){
+  const btn=document.getElementById('sendBtn');
+  const cc=document.getElementById('charCount');
+  btn.disabled=!val.trim()||document.getElementById('msgIn').disabled;
+  const left=MAX_MSG-val.length;
+  if(val.length>0){
+    cc.style.display='';
+    cc.textContent=left;
+    cc.className='char-count'+(left<20?' danger':left<60?' warn':'');
+  } else {
+    cc.style.display='none';
+  }
+  if(val){
+    broadcastRaw({type:'typing',typing:true});
+    if(typingOutTimer) clearTimeout(typingOutTimer);
+    typingOutTimer=setTimeout(()=>broadcastRaw({type:'typing',typing:false}),2200);
+  } else {
+    broadcastRaw({type:'typing',typing:false});
+    if(typingOutTimer){clearTimeout(typingOutTimer);typingOutTimer=null;}
+  }
+}
+
+async function doSend(){
+  const inp=document.getElementById('msgIn');
+  const text=inp.value.trim();
+  if(!text||text.length>MAX_MSG||!roomKey) return;
+  inp.value='';
+  onMsgInput('');
+  if(typingOutTimer){clearTimeout(typingOutTimer);typingOutTimer=null;}
+
+  const id=Date.now()+'-'+Math.random();
+  const msgs=document.getElementById('messages');
+  const lastEl=msgs.lastElementChild;
+  const lastIsSelf=lastEl&&lastEl.classList.contains('msg-row')&&lastEl.classList.contains('self');
+
+  pushMsg({self:true,fromName:myName,text,id,ts:Date.now(),showAv:false,grouped:lastIsSelf});
+
+  const buf=await encryptMsg({type:'chat',text,fromName:myName,id},roomKey);
+  for(const[,c] of conns) if(c.open) c.send(buf);
+  broadcastRaw({type:'typing',typing:false});
+  sndSend();
+  inp.focus();
+}
+
+/* ══════════════════════════════════════════
+   BROADCAST
+══════════════════════════════════════════ */
+function sendRaw(rid, obj){
+  const c=conns.get(rid);
+  if(c?.open) c.send(encodeRaw(obj));
+}
+function broadcastRaw(obj){
+  const b=encodeRaw(obj);
+  for(const[,c] of conns) if(c.open) c.send(b);
+}
+function broadcastRawExcept(obj, ex){
+  const b=encodeRaw(obj);
+  for(const[rid,c] of conns) if(rid!==ex&&c.open) c.send(b);
+}
+
+/* ══════════════════════════════════════════
+   DETECT CONN TYPE
+══════════════════════════════════════════ */
+async function detectConnType(conn){
+  try{
+    const pc=conn.peerConnection;
+    if(!pc) return 'RELAYED';
+    const stats=await pc.getStats();
+    for(const[,r] of stats){
+      if(r.type==='candidate-pair'&&(r.state==='succeeded'||r.nominated)){
+        const lc=stats.get(r.localCandidateId);
+        if(lc&&lc.candidateType!=='relay') return 'DIRECT';
+      }
+    }
+  }catch(e){}
+  return 'RELAYED';
+}
+
+/* ══════════════════════════════════════════
+   WIRE CONNECTION
+══════════════════════════════════════════ */
+function wireConn(conn, rid){
+  conn.on('open',()=>{
+    conns.set(rid,conn);
+    peerConns.set(rid,true);
+    connecting.delete(rid);
+    if(conn._dc) conn._dc.binaryType='arraybuffer';
+    conn.send(encodeRaw({type:'handshake',name:myName,peerId:myPeerId}));
+    if(isHost){
+      const peers=[...peerNames.entries()].filter(([id])=>id!==rid).map(([id,n])=>({id,name:n}));
+      if(peers.length) conn.send(encodeRaw({type:'room-info',peers}));
+    }
+    updateOnlineBadge(); renderPeers();
+    setTimeout(()=>detectConnType(conn).then(t=>{peerTypes.set(rid,t);renderPeers();}),2500);
+  });
+
+  conn.on('data',async(raw)=>{
+    const m=await decodePacket(raw,roomKey);
+    if(!m) return;
+
+    if(m.type==='handshake'){
+      const isNew=!peerNames.has(rid)||peerNames.get(rid)?.startsWith('…');
+      peerNames.set(rid,m.name);
+      if(isNew){
+        sysMsg(`${m.name} entered the tunnel`);
+        sndConnect();
+        if(isHost) broadcastRawExcept({type:'peer-joined',peerId:rid,name:m.name},rid);
+      }
+      renderPeers(); setTunnelStatus('connected');
+
+    } else if(m.type==='room-info'){
+      for(const{id,name:n} of m.peers){
+        if(id!==myPeerId&&!conns.has(id)&&!connecting.has(id)){
+          peerNames.set(id,n); connectTo(id);
+        }
+      }
+
+    } else if(m.type==='peer-joined'){
+      if(m.peerId!==myPeerId&&!conns.has(m.peerId)&&!connecting.has(m.peerId)){
+        if(m.name) peerNames.set(m.peerId,m.name);
+        connectTo(m.peerId);
+      }
+
+    } else if(m.type==='chat'){
+      clearTyping(rid);
+      const fromName=peerNames.get(rid)||m.fromName||`…${rid.slice(-4)}`;
+      const msgs=document.getElementById('messages');
+      const lastEl=msgs.lastElementChild;
+      const lastFrom=lastEl?.dataset?.from;
+      const grouped=lastFrom&&lastFrom===rid&&lastEl.classList.contains('msg-row');
+      pushMsg({self:false,fromName,text:m.text,id:m.id,ts:Date.now(),showAv:!grouped,grouped,from:rid});
+      msgs.lastElementChild.dataset.from=rid;
+      sendRaw(rid,{type:'READ_RECEIPT',id:m.id});
+      sndReceive(); showFlash();
+
+    } else if(m.type==='READ_RECEIPT'){
+      const el=tickEls.get(m.id);
+      if(el){el.textContent='✓✓';el.classList.add('read');}
+
+    } else if(m.type==='typing'){
+      const pname=peerNames.get(rid)||`…${rid.slice(-4)}`;
+      setTyping(rid,pname,m.typing);
+    }
+  });
+
+  conn.on('close',()=>{
+    conns.delete(rid); connecting.delete(rid); peerTypes.delete(rid);
+    const pname=peerNames.get(rid)||`…${rid.slice(-4)}`;
+    clearTyping(rid); peerNames.delete(rid); peerConns.delete(rid);
+    sysMsg(`${pname} left the tunnel`);
+    updateOnlineBadge(); renderPeers();
+  });
+
+  conn.on('error',()=>{
+    connecting.delete(rid); peerConns.set(rid,false);
+    updateOnlineBadge(); renderPeers();
+  });
+}
+
+/* ══════════════════════════════════════════
+   CONNECT TO PEER
+══════════════════════════════════════════ */
+function connectTo(rid){
+  if(!peer||peer.destroyed) return;
+  if(conns.has(rid)||connecting.has(rid)) return;
+  connecting.add(rid);
+  if(!peerNames.has(rid)) peerNames.set(rid,`…${rid.slice(-4)}`);
+  peerConns.set(rid,false);
+  const conn=peer.connect(rid,{serialization:'binary',reliable:true});
+  conns.set(rid,conn);
+  wireConn(conn,rid);
+  renderPeers();
+}
+
+/* ══════════════════════════════════════════
+   INIT PEER
+══════════════════════════════════════════ */
+function initPeer(rid){
+  function tryInit(pid, host){
+    const p=new Peer(pid,{config:{iceServers:ICE},debug:0});
+    peer=p;
+
+    p.on('open',(id)=>{
+      myPeerId=id; isHost=host;
+      setTunnelStatus('connected'); setErr('');
+      if(!host) connectTo(rid);
+    });
+
+    p.on('connection',(conn)=>{
+      const r=conn.peer;
+      const ex=conns.get(r);
+      if(ex?.open){conn.close();return;}
+      if(ex) conns.delete(r);
+      connecting.delete(r);
+      conns.set(r,conn);
+      peerConns.set(r,false);
+      wireConn(conn,r);
+    });
+
+    p.on('error',(err)=>{
+      if(err.type==='unavailable-id'){
+        p.destroy();
+        tryInit(`${rid}-${genShortId()}`,false);
+        return;
+      }
+      if(err.type==='peer-unavailable') return;
+      setErr('ERR: '+err.message);
+      setTunnelStatus('error');
+      sndError();
+    });
+
+    p.on('disconnected',()=>{if(!p.destroyed) p.reconnect();});
+  }
+  tryInit(rid, true);
+}
+
+/* ══════════════════════════════════════════
+   PWA — SERVICE WORKER & FEATURES
+══════════════════════════════════════════ */
+(async function initPWA(){
+
+  /* — Register Service Worker (only on http/https, not local files) — */
+  if('serviceWorker' in navigator && (location.protocol === 'https:' || location.protocol === 'http:')){
+    try{
+      const reg = await navigator.serviceWorker.register('./sw.js', {scope:'./'});
+
+      /* Listen for SW messages (flush queued msgs, periodic ping) */
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if(event.data?.type === 'flush-queued-msg'){
+          /* If we're in a room, attempt to send the queued message */
+          if(roomKey && conns.size > 0){
+            const payload = event.data.payload;
+            if(payload?.text){
+              encryptMsg({type:'chat',text:payload.text,fromName:myName,id:payload.id},roomKey)
+                .then(buf=>{ for(const[,c] of conns) if(c.open) c.send(buf); });
+            }
+          }
+        }
+        if(event.data?.type === 'periodic-sync-ping'){
+          /* Keep peer connection alive */
+          if(peer && !peer.destroyed && peer.disconnected) peer.reconnect();
+        }
+      });
+
+      /* — Periodic Background Sync — */
+      if('periodicSync' in reg){
+        try{
+          const status = await navigator.permissions.query({name:'periodic-background-sync'});
+          if(status.state === 'granted'){
+            await reg.periodicSync.register('ghost-link-keepalive',{minInterval: 5 * 60 * 1000});
+          }
+        }catch(_){}
+      }
+
+      /* — Push Notifications — */
+      if('pushManager' in reg && 'Notification' in window){
+        if(Notification.permission === 'default'){
+          /* We don't auto-prompt — let the user trigger it manually */
+        }
+      }
+
+    }catch(err){
+      console.warn('[Ghost Link] SW registration failed:', err);
+    }
+  }
+
+  /* — Background Sync helper (queue msg if offline) — */
+  window.queueMsgForSync = async function(text){
+    if(!('serviceWorker' in navigator)) return;
+    const reg = await navigator.serviceWorker.ready;
+    const payload = {id: Date.now()+'-'+Math.random(), text, from: myName, ts: Date.now()};
+    if(navigator.serviceWorker.controller){
+      navigator.serviceWorker.controller.postMessage({type:'queue-msg', payload});
+    }
+    if('sync' in reg){
+      try{ await reg.sync.register('ghost-link-msg-sync'); }catch(_){}
+    }
+  };
+
+  /* — Handle ?action= shortcuts — */
+  const params = new URLSearchParams(location.search);
+  const action = params.get('action');
+  if(action === 'join'){
+    switchTab('join');
+    document.getElementById('codeIn').focus();
+  } else if(action === 'create'){
+    switchTab('create');
+    document.getElementById('nameIn').focus();
+  }
+
+  /* — Handle share target (?share-target) — */
+  if(params.has('share-target')){
+    const sharedText = params.get('text') || params.get('url') || params.get('title') || '';
+    if(sharedText){
+      switchTab('join');
+      const codeIn = document.getElementById('codeIn');
+      const cleaned = sharedText.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);
+      if(cleaned.length === 6){ codeIn.value = cleaned; }
+    }
+  }
+
+  /* — Request notification permission when entering a room — */
+  const origEnterRoom = window.enterRoom;
+  window._requestNotifOnce = false;
+  window.enterRoom = async function(n, rid){
+    if(!window._requestNotifOnce && 'Notification' in window && Notification.permission === 'default'){
+      window._requestNotifOnce = true;
+      try{ await Notification.requestPermission(); }catch(_){}
+    }
+    return origEnterRoom(n, rid);
+  };
+
+})();
+</script>
+</body>
+</html>
